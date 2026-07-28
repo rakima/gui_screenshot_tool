@@ -11,6 +11,45 @@ class CaptureError(RuntimeError):
     """Raised when a window cannot be captured."""
 
 
+def _visible_frame_crop(
+    handle: int,
+    window_rect: tuple[int, int, int, int],
+    image_size: tuple[int, int],
+) -> tuple[int, int, int, int] | None:
+    """Return a crop box that removes Windows' invisible resize border."""
+    frame_rect = wintypes.RECT()
+    dwm_get_window_attribute = ctypes.windll.dwmapi.DwmGetWindowAttribute
+    dwm_get_window_attribute.argtypes = [
+        wintypes.HWND,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+    ]
+    dwm_get_window_attribute.restype = ctypes.c_long
+    # DWMWA_EXTENDED_FRAME_BOUNDS (9) is the visible window frame in screen
+    # coordinates, excluding the invisible resize border returned by GetWindowRect.
+    result = dwm_get_window_attribute(
+        handle,
+        9,
+        ctypes.byref(frame_rect),
+        ctypes.sizeof(frame_rect),
+    )
+    if result != 0:
+        return None
+
+    window_left, window_top, _, _ = window_rect
+    image_width, image_height = image_size
+    crop = (
+        max(0, frame_rect.left - window_left),
+        max(0, frame_rect.top - window_top),
+        min(image_width, frame_rect.right - window_left),
+        min(image_height, frame_rect.bottom - window_top),
+    )
+    if crop[0] >= crop[2] or crop[1] >= crop[3]:
+        return None
+    return crop
+
+
 def enable_dpi_awareness() -> None:
     """Avoid scaled coordinates on high-DPI displays."""
     if sys.platform != "win32":
@@ -36,7 +75,8 @@ def capture_window(handle: int, output_path: Path) -> Path:
     if win32gui.IsIconic(handle):
         raise CaptureError("最小化されたウィンドウは撮影できません。復元して再試行してください。")
 
-    left, top, right, bottom = win32gui.GetWindowRect(handle)
+    window_rect = win32gui.GetWindowRect(handle)
+    left, top, right, bottom = window_rect
     width, height = right - left, bottom - top
     if width <= 0 or height <= 0:
         raise CaptureError("対象ウィンドウのサイズを取得できません。")
@@ -69,6 +109,10 @@ def capture_window(handle: int, output_path: Path) -> Path:
             0,
             1,
         )
+        with suppress(AttributeError, OSError):
+            crop = _visible_frame_crop(handle, window_rect, image.size)
+            if crop is not None and crop != (0, 0, *image.size):
+                image = image.crop(crop)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         image.save(output_path)
         return output_path
