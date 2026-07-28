@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gui-screenshot-tool"
+version = "0.1.0"
+description = "Capture a selected Windows application window to a remembered file."
+readme = "README.md"
+requires-python = ">=3.13"
+license = { file = "LICENSE" }
+authors = [{ name = "gui_screenshot_tool contributors" }]
+dependencies = [
+    "Pillow>=11.0",
+    "pywin32>=308; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.9",
+]
+
+[project.scripts]
+gui-screenshot-tool = "gui_screenshot_tool.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gui_screenshot_tool"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
