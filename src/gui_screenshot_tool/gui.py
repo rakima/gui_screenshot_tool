@@ -26,7 +26,10 @@ class ScreenshotApp(ttk.Frame):
         self.status_var = tk.StringVar(value="ウィンドウ一覧を読み込んでいます…")
         self._build()
         self._load_settings()
-        self.refresh_windows()
+        # EnumWindows only reports this application after Tk has mapped the root
+        # window. Delaying the initial refresh also makes this tool selectable as
+        # a README screenshot target.
+        self.master.after(100, self.refresh_windows)
 
     def _build(self) -> None:
         self.grid(sticky="nsew")
