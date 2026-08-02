@@ -1,6 +1,11 @@
 import pytest
 
-from gui_screenshot_tool.automation import AutoCaptureRunner, AutomationError
+from gui_screenshot_tool.automation import (
+    AutoCaptureRunner,
+    AutomationError,
+    launch_application,
+    parse_command_line_arguments,
+)
 from gui_screenshot_tool.models import (
     AutoCaptureSettings,
     ExitMode,
@@ -91,6 +96,26 @@ def test_invalid_launch_command_is_reported(tmp_path):
 
     with pytest.raises(AutomationError, match="起動できません"):
         runner.run(make_settings(tmp_path), lambda _message: None)
+
+
+def test_launch_application_rejects_missing_command(tmp_path):
+    settings = make_settings(
+        tmp_path,
+        command=str(tmp_path / "missing.exe"),
+        arguments="",
+    )
+
+    with pytest.raises(AutomationError, match="起動できません"):
+        launch_application(settings)
+
+
+def test_windows_command_line_arguments_support_quoted_values():
+    assert parse_command_line_arguments('--mode demo --title "Hello world"') == [
+        "--mode",
+        "demo",
+        "--title",
+        "Hello world",
+    ]
 
 
 def test_window_timeout_closes_launched_process(tmp_path):
