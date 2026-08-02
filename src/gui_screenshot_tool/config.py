@@ -6,7 +6,12 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from gui_screenshot_tool.models import AppSettings
+from gui_screenshot_tool.models import (
+    AppSettings,
+    AutoCaptureSettings,
+    ExitMode,
+    TitleMatchMode,
+)
 
 APP_DIRECTORY_NAME = "gui_screenshot_tool"
 SETTINGS_FILENAME = "settings.json"
@@ -31,10 +36,8 @@ class SettingsStore:
         self.path = path if path is not None else settings_path()
 
     def load_all(self) -> dict[str, AppSettings]:
-        if not self.path.exists():
-            return {}
+        raw = self._load_document()
         try:
-            raw: Any = json.loads(self.path.read_text(encoding="utf-8"))
             apps = raw.get("apps", {})
             if not isinstance(apps, dict):
                 raise ValueError("'apps' must be an object")
@@ -47,16 +50,78 @@ class SettingsStore:
                 for name, value in apps.items()
                 if isinstance(name, str) and isinstance(value, dict)
             }
-        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        except (ValueError, KeyError, TypeError) as exc:
             raise SettingsError(f"設定ファイルを読み込めません: {self.path}") from exc
 
     def get(self, profile: str = "default") -> AppSettings | None:
         return self.load_all().get(profile)
 
     def save(self, settings: AppSettings, profile: str = "default") -> None:
-        apps = self.load_all()
-        apps[profile] = settings
-        data = {"apps": {name: asdict(value) for name, value in apps.items()}}
+        data = self._load_document()
+        apps = data.setdefault("apps", {})
+        if not isinstance(apps, dict):
+            raise SettingsError(f"設定ファイルを読み込めません: {self.path}")
+        apps[profile] = asdict(settings)
+        self._save_document(data)
+
+    def load_auto_capture_profiles(self) -> dict[str, AutoCaptureSettings]:
+        """Load all registered automatic capture profiles."""
+        raw = self._load_document()
+        try:
+            profiles = raw.get("auto_capture_profiles", {})
+            if not isinstance(profiles, dict):
+                raise ValueError("'auto_capture_profiles' must be an object")
+            return {
+                name: AutoCaptureSettings(
+                    name=name,
+                    command=value["command"],
+                    working_directory=value["working_directory"],
+                    arguments=value.get("arguments", ""),
+                    window_title=value["window_title"],
+                    title_match_mode=TitleMatchMode(
+                        value.get("title_match_mode", TitleMatchMode.EXACT)
+                    ),
+                    startup_timeout_seconds=float(value["startup_timeout_seconds"]),
+                    capture_delay_seconds=float(value["capture_delay_seconds"]),
+                    output_directory=value["output_directory"],
+                    filename=value["filename"],
+                    close_after_capture=bool(value.get("close_after_capture", True)),
+                    exit_mode=ExitMode(value.get("exit_mode", ExitMode.GRACEFUL)),
+                    shutdown_timeout_seconds=float(value.get("shutdown_timeout_seconds", 5.0)),
+                )
+                for name, value in profiles.items()
+                if isinstance(name, str) and isinstance(value, dict)
+            }
+        except (ValueError, KeyError, TypeError) as exc:
+            raise SettingsError(f"自動撮影設定を読み込めません: {self.path}") from exc
+
+    def save_auto_capture_profile(self, settings: AutoCaptureSettings) -> None:
+        data = self._load_document()
+        profiles = data.setdefault("auto_capture_profiles", {})
+        if not isinstance(profiles, dict):
+            raise SettingsError(f"設定ファイルを読み込めません: {self.path}")
+        profiles[settings.name] = asdict(settings)
+        self._save_document(data)
+
+    def delete_auto_capture_profile(self, name: str) -> None:
+        data = self._load_document()
+        profiles = data.get("auto_capture_profiles", {})
+        if isinstance(profiles, dict):
+            profiles.pop(name, None)
+        self._save_document(data)
+
+    def _load_document(self) -> dict[str, Any]:
+        if not self.path.exists():
+            return {}
+        try:
+            raw: Any = json.loads(self.path.read_text(encoding="utf-8"))
+            if not isinstance(raw, dict):
+                raise ValueError("root must be an object")
+            return raw
+        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+            raise SettingsError(f"設定ファイルを読み込めません: {self.path}") from exc
+
+    def _save_document(self, data: dict[str, Any]) -> None:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             temporary = self.path.with_suffix(".tmp")

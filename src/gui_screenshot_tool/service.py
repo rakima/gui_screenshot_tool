@@ -1,9 +1,10 @@
 """Application use cases shared by the CLI and GUI."""
 
+import re
 from pathlib import Path
 
 from gui_screenshot_tool.capture import CaptureError, capture_window
-from gui_screenshot_tool.models import AppSettings, WindowInfo
+from gui_screenshot_tool.models import AppSettings, AutoCaptureSettings, WindowInfo
 from gui_screenshot_tool.windows import find_window
 
 
@@ -19,6 +20,35 @@ def validate_settings(settings: AppSettings) -> None:
         raise ValueError("ファイル名にはディレクトリを含めないでください。")
     if Path(filename).suffix.casefold() not in {".png", ".jpg", ".jpeg", ".webp"}:
         raise ValueError("対応する拡張子は .png、.jpg、.jpeg、.webp です。")
+
+
+def validate_auto_capture_settings(settings: AutoCaptureSettings) -> None:
+    """Validate an automatic capture profile before saving or executing it."""
+    if not settings.name.strip():
+        raise ValueError("設定名を入力してください。")
+    if not settings.command.strip():
+        raise ValueError("実行コマンドを入力してください。")
+    if not settings.working_directory.strip():
+        raise ValueError("作業ディレクトリを入力してください。")
+    if not settings.window_title.strip():
+        raise ValueError("対象ウィンドウタイトルを入力してください。")
+    if settings.startup_timeout_seconds <= 0:
+        raise ValueError("最大起動待機時間は0より大きい値にしてください。")
+    if settings.capture_delay_seconds < 0:
+        raise ValueError("追加待機時間は0以上にしてください。")
+    if settings.shutdown_timeout_seconds <= 0:
+        raise ValueError("終了待機時間は0より大きい値にしてください。")
+    validate_settings(
+        AppSettings(
+            window_title=settings.window_title,
+            output_directory=settings.output_directory,
+            filename=settings.filename,
+        )
+    )
+    if re.search(r'[<>:"/\\|?*\x00-\x1f]', settings.filename):
+        raise ValueError("ファイル名にWindowsで使用できない文字が含まれています。")
+    if settings.filename[-1:] in {" ", "."}:
+        raise ValueError("ファイル名の末尾に空白またはピリオドは使用できません。")
 
 
 def capture_from_settings(settings: AppSettings) -> Path:
