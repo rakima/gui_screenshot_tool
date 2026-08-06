@@ -19,6 +19,7 @@ def list_windows() -> list[WindowInfo]:
     """Return titled, visible top-level windows."""
     _require_windows()
     import win32gui
+    import win32process
 
     windows: list[WindowInfo] = []
 
@@ -26,7 +27,7 @@ def list_windows() -> list[WindowInfo]:
         title = win32gui.GetWindowText(handle).strip()
         visible = bool(win32gui.IsWindowVisible(handle))
         if title and visible and win32gui.GetParent(handle) == 0:
-            _, process_id = win32gui.GetWindowThreadProcessId(handle)
+            _, process_id = win32process.GetWindowThreadProcessId(handle)
             windows.append(
                 WindowInfo(
                     handle=handle,
