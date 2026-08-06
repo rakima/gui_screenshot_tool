@@ -32,3 +32,22 @@ def test_find_window_supports_partial_title_match(monkeypatch):
     result = windows.find_window_for_process("Sample App", 200, TitleMatchMode.PARTIAL)
 
     assert result == target
+
+
+def test_list_windows_gets_process_id_from_win32process(monkeypatch):
+    fake_gui = SimpleNamespace(
+        EnumWindows=lambda callback, extra: callback(10, extra),
+        GetWindowText=lambda _handle: "Sample App",
+        IsWindowVisible=lambda _handle: True,
+        GetParent=lambda _handle: 0,
+        IsIconic=lambda _handle: False,
+    )
+    fake_process = SimpleNamespace(
+        GetWindowThreadProcessId=lambda _handle: (20, 1234),
+    )
+    monkeypatch.setitem(sys.modules, "win32gui", fake_gui)
+    monkeypatch.setitem(sys.modules, "win32process", fake_process)
+
+    result = windows.list_windows()
+
+    assert result == [WindowInfo(10, "Sample App", True, False, 1234)]
