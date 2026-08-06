@@ -2,6 +2,8 @@
 
 import sys
 from collections.abc import Callable
+from importlib import import_module
+from typing import Any
 
 from gui_screenshot_tool.models import TitleMatchMode, WindowInfo
 
@@ -15,11 +17,23 @@ def _require_windows() -> None:
         raise WindowError("この機能は Windows でのみ利用できます。")
 
 
+def _load_pywin32_modules(*names: str) -> tuple[Any, ...]:
+    """Load pywin32 modules or raise an actionable application error."""
+    try:
+        return tuple(import_module(name) for name in names)
+    except ModuleNotFoundError as exc:
+        command = f'"{sys.executable}" -m pip install pywin32'
+        raise WindowError(
+            "Windows操作に必要な pywin32 が、このPython環境にインストールされて"
+            f"いません。\n実行中のPython: {sys.executable}\n"
+            f"インストールコマンド: {command}"
+        ) from exc
+
+
 def list_windows() -> list[WindowInfo]:
     """Return titled, visible top-level windows."""
     _require_windows()
-    import win32gui
-    import win32process
+    win32gui, win32process = _load_pywin32_modules("win32gui", "win32process")
 
     windows: list[WindowInfo] = []
 
@@ -74,7 +88,7 @@ def find_window_for_process(
     if not candidates:
         return None
 
-    import win32gui
+    (win32gui,) = _load_pywin32_modules("win32gui")
 
     def rank(window: WindowInfo) -> tuple[bool, bool, int]:
         left, top, right, bottom = win32gui.GetWindowRect(window.handle)
@@ -91,8 +105,7 @@ def find_window_for_process(
 def bring_to_foreground(window: WindowInfo) -> None:
     """Restore and bring a window to the foreground."""
     _require_windows()
-    import win32con
-    import win32gui
+    win32con, win32gui = _load_pywin32_modules("win32con", "win32gui")
 
     if not win32gui.IsWindow(window.handle):
         raise WindowError("対象ウィンドウが存在しません。")
@@ -108,8 +121,7 @@ def bring_to_foreground(window: WindowInfo) -> None:
 def request_window_close(handle: int) -> None:
     """Post a normal WM_CLOSE request to a window."""
     _require_windows()
-    import win32con
-    import win32gui
+    win32con, win32gui = _load_pywin32_modules("win32con", "win32gui")
 
     if win32gui.IsWindow(handle):
         win32gui.PostMessage(handle, win32con.WM_CLOSE, 0, 0)
@@ -117,7 +129,7 @@ def request_window_close(handle: int) -> None:
 
 def window_exists(handle: int) -> bool:
     _require_windows()
-    import win32gui
+    (win32gui,) = _load_pywin32_modules("win32gui")
 
     return bool(win32gui.IsWindow(handle))
 
@@ -125,8 +137,7 @@ def window_exists(handle: int) -> bool:
 def force_terminate_process(process_id: int) -> None:
     """Forcefully terminate a process by PID."""
     _require_windows()
-    import win32api
-    import win32con
+    win32api, win32con = _load_pywin32_modules("win32api", "win32con")
 
     process_handle = None
     try:

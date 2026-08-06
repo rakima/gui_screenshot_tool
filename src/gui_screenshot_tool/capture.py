@@ -66,9 +66,17 @@ def capture_window(handle: int, output_path: Path) -> Path:
     if sys.platform != "win32":
         raise CaptureError("スクリーンショット撮影は Windows でのみ利用できます。")
 
-    import win32gui
-    import win32ui
-    from PIL import Image
+    try:
+        import win32gui
+        import win32ui
+        from PIL import Image
+    except ModuleNotFoundError as exc:
+        command = f'"{sys.executable}" -m pip install Pillow pywin32'
+        raise CaptureError(
+            "撮影に必要な Pillow または pywin32 が、このPython環境に"
+            f"インストールされていません。\n実行中のPython: {sys.executable}\n"
+            f"インストールコマンド: {command}"
+        ) from exc
 
     if not win32gui.IsWindow(handle):
         raise CaptureError("対象ウィンドウが存在しません。")

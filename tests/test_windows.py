@@ -1,6 +1,8 @@
 import sys
 from types import SimpleNamespace
 
+import pytest
+
 from gui_screenshot_tool import windows
 from gui_screenshot_tool.models import TitleMatchMode, WindowInfo
 
@@ -51,3 +53,17 @@ def test_list_windows_gets_process_id_from_win32process(monkeypatch):
     result = windows.list_windows()
 
     assert result == [WindowInfo(10, "Sample App", True, False, 1234)]
+
+
+def test_missing_pywin32_reports_interpreter_and_install_command(monkeypatch):
+    def missing(_name):
+        raise ModuleNotFoundError("win32gui")
+
+    monkeypatch.setattr(windows, "import_module", missing)
+
+    with pytest.raises(windows.WindowError) as error:
+        windows.list_windows()
+
+    message = str(error.value)
+    assert sys.executable in message
+    assert "pip install pywin32" in message
