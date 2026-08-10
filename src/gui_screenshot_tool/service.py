@@ -1,6 +1,7 @@
 """Application use cases shared by the CLI and GUI."""
 
 import re
+from datetime import datetime
 from pathlib import Path
 
 from gui_screenshot_tool.capture import CaptureError, capture_window
@@ -20,6 +21,8 @@ def validate_settings(settings: AppSettings) -> None:
         raise ValueError("ファイル名にはディレクトリを含めないでください。")
     if Path(filename).suffix.casefold() not in {".png", ".jpg", ".jpeg", ".webp"}:
         raise ValueError("対応する拡張子は .png、.jpg、.jpeg、.webp です。")
+    if settings.add_date and settings.add_timestamp:
+        raise ValueError("日付と日時は同時に指定できません。")
 
 
 def validate_auto_capture_settings(settings: AutoCaptureSettings) -> None:
@@ -43,6 +46,8 @@ def validate_auto_capture_settings(settings: AutoCaptureSettings) -> None:
             window_title=settings.window_title,
             output_directory=settings.output_directory,
             filename=settings.filename,
+            add_timestamp=settings.add_timestamp,
+            add_date=settings.add_date,
         )
     )
     if re.search(r'[<>:"/\\|?*\x00-\x1f]', settings.filename):
@@ -51,14 +56,44 @@ def validate_auto_capture_settings(settings: AutoCaptureSettings) -> None:
         raise ValueError("ファイル名の末尾に空白またはピリオドは使用できません。")
 
 
+def resolve_output_path(
+    settings: AppSettings | AutoCaptureSettings,
+    current_time: datetime | None = None,
+) -> Path:
+    """Resolve the destination path with configured sequence and timestamp."""
+    directory = Path(settings.output_directory)
+    source = Path(settings.filename)
+    filename = settings.filename
+    if settings.add_timestamp:
+        timestamp = (current_time or datetime.now()).strftime("%Y%m%d%H%M%S")
+        filename = f"{source.stem}_{timestamp}{source.suffix}"
+    elif settings.add_date:
+        date = (current_time or datetime.now()).strftime("%Y%m%d")
+        filename = f"{source.stem}_{date}{source.suffix}"
+    if not settings.add_sequence_number:
+        return directory / filename
+
+    pattern = re.compile(
+        rf"^(\d+)_{re.escape(source.stem)}(?:_\d{{8}}|_\d{{14}})?"
+        rf"{re.escape(source.suffix)}$"
+    )
+    highest_sequence = 0
+    if directory.is_dir():
+        for candidate in directory.iterdir():
+            match = pattern.match(candidate.name)
+            if match:
+                highest_sequence = max(highest_sequence, int(match.group(1)))
+    return directory / f"{highest_sequence + 1:02d}_{filename}"
+
+
 def capture_from_settings(settings: AppSettings) -> Path:
     validate_settings(settings)
     window = find_window(settings.window_title)
     if window is None:
         raise CaptureError(f"対象ウィンドウが見つかりません: {settings.window_title}")
-    return capture_window(window.handle, settings.output_path)
+    return capture_window(window.handle, resolve_output_path(settings))
 
 
 def capture_selected(window: WindowInfo, settings: AppSettings) -> Path:
     validate_settings(settings)
-    return capture_window(window.handle, settings.output_path)
+    return capture_window(window.handle, resolve_output_path(settings))

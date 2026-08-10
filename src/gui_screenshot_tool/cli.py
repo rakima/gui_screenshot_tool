@@ -6,6 +6,7 @@ import sys
 from gui_screenshot_tool.capture import CaptureError, enable_dpi_awareness
 from gui_screenshot_tool.config import SettingsError, SettingsStore
 from gui_screenshot_tool.service import capture_from_settings
+from gui_screenshot_tool.windows import WindowError
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -48,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"設定 '{args.profile}' がありません。先に --configure を実行してください。"
             )
         output_path = capture_from_settings(settings)
-    except (SettingsError, CaptureError, ValueError, OSError) as exc:
+    except (SettingsError, CaptureError, WindowError, ValueError, OSError) as exc:
         print(f"エラー: {exc}", file=sys.stderr)
         return 1
     print(f"保存しました: {output_path}")

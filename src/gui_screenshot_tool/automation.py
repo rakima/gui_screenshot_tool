@@ -10,7 +10,7 @@ from pathlib import Path
 
 from gui_screenshot_tool.capture import capture_window
 from gui_screenshot_tool.models import AutoCaptureSettings, ExitMode, WindowInfo
-from gui_screenshot_tool.service import validate_auto_capture_settings
+from gui_screenshot_tool.service import resolve_output_path, validate_auto_capture_settings
 from gui_screenshot_tool.windows import (
     bring_to_foreground,
     find_window_for_process,
@@ -102,7 +102,7 @@ class AutoCaptureRunner:
                 self.sleeper(settings.capture_delay_seconds)
             self.foreground_setter(window)
             log("対象ウィンドウを最前面にしました。")
-            output_path = self.capturer(window.handle, settings.output_path)
+            output_path = self.capturer(window.handle, resolve_output_path(settings))
             log(f"保存しました: {output_path.resolve()}")
             self._close_application(settings, process, window, log)
             completed = True

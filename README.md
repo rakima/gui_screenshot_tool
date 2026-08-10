@@ -18,6 +18,8 @@ Windowsアプリのウィンドウだけを撮影し、覚えておいた場所�
 - 起動したPIDのウィンドウを優先し、完全一致・部分一致でタイトルを検索
 - 撮影後の正常終了、タイムアウト後の強制終了、終了しない設定に対応
 - 自動撮影の進行状況とエラーを画面内ログへ表示
+- `01_`、`02_` の連番を付け、既存画像を上書きせずに保存
+- 拡張子の前に撮影日または撮影日時を追加（排他選択）
 
 ## 動作環境
 
@@ -82,7 +84,18 @@ python main.py --capture
 操作できます。同時に実行できる自動撮影は1件です。
 
 保存先ディレクトリがない場合は、撮影時または「保存先を開く」操作時に自動で
-作成します。同名ファイルは確認せず上書きします。
+作成します。連番を使わない場合、同名ファイルは確認せず上書きします。
+
+手動撮影と自動撮影設定では、次のファイル名オプションを個別にON/OFFできます。
+
+- 連番: `01_main_window.png`、`02_main_window.png`
+- 現在日付: `main_window_20260810.png`
+- 現在日時: `main_window_20260810143025.png`
+- 連番＋日時: `01_main_window_20260810143025.png`
+
+連番をONにした場合は既存ファイルの最大番号に1を加えるため、上書きしません。
+日付と日時は「なし／日付／日時」から1つだけ選択できます。
+連番がOFFの場合は従来どおり同名ファイルを上書きします。
 
 ## 設定ファイル
 
@@ -98,7 +111,10 @@ python main.py --capture
     "default": {
       "window_title": "compare_tool",
       "output_directory": "C:\\work\\compare_tool\\docs\\images",
-      "filename": "main_window.png"
+      "filename": "main_window.png",
+      "add_sequence_number": false,
+      "add_timestamp": false,
+      "add_date": false
     }
   },
   "auto_capture_profiles": {
@@ -113,6 +129,9 @@ python main.py --capture
       "capture_delay_seconds": 1.0,
       "output_directory": "C:\\work\\compare_tool\\docs\\images",
       "filename": "main_window.png",
+      "add_sequence_number": true,
+      "add_timestamp": true,
+      "add_date": false,
       "close_after_capture": true,
       "exit_mode": "graceful_then_force",
       "shutdown_timeout_seconds": 5.0
@@ -130,6 +149,9 @@ python main.py --capture
 ないときはタイトルが一致する表示中のウィンドウへフォールバックします。
 
 `title_match_mode` は `exact`（完全一致）または `partial`（部分一致）です。
+`add_sequence_number`、`add_date`、`add_timestamp` はそれぞれ連番、現在日付、
+現在日時の付加を表す真偽値です。`add_date` と `add_timestamp` は同時に `true`
+にはできません。既存の設定ファイルにキーがない場合は `false` として読み込みます。
 `exit_mode` は次のいずれかです。
 
 - `graceful`: 正常終了要求のみ
@@ -146,6 +168,19 @@ python main.py --capture
 - GUIで選べるのはタイトルのある表示中のトップレベルウィンドウです。
 - 管理者として起動したアプリを操作する場合、本ツールにも同等の権限が必要な
   ことがあります。
+
+### `No module named 'win32gui'` が表示される場合
+
+ツールマネージャや仮想環境から起動すると、通常のターミナルとは別のPythonが
+使われることがあります。エラーダイアログに表示された「実行中のPython」を
+使って依存関係をインストールしてください。
+
+```powershell
+& "C:\path\to\python.exe" -m pip install -e "D:\work\gui_screenshot_tool"
+```
+
+ツールマネージャには、依存関係をインストールしたPythonの絶対パスを実行
+コマンドとして設定するのが確実です。
 
 ## 自動撮影の手動確認
 

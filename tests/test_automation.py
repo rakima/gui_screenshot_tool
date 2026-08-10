@@ -88,6 +88,32 @@ def test_successful_launch_capture_save_and_graceful_close(tmp_path):
     assert ("close", window.handle) in events
 
 
+def test_capture_uses_next_sequence_number(tmp_path):
+    (tmp_path / "01_sample.png").touch()
+    process = FakeProcess()
+    window = WindowInfo(10, "Sample App", True, False, process.pid)
+    captured_paths = []
+    runner = AutoCaptureRunner(
+        launcher=lambda _settings: process,
+        window_finder=lambda *_args: window,
+        foreground_setter=lambda _window: None,
+        capturer=lambda _handle, path: captured_paths.append(path) or path,
+        close_requester=lambda _handle: None,
+        existence_checker=lambda _handle: False,
+    )
+
+    runner.run(
+        make_settings(
+            tmp_path,
+            output_directory=str(tmp_path),
+            add_sequence_number=True,
+        ),
+        lambda _message: None,
+    )
+
+    assert captured_paths == [tmp_path / "02_sample.png"]
+
+
 def test_invalid_launch_command_is_reported(tmp_path):
     def fail(_settings):
         raise AutomationError("アプリを起動できません: missing.exe")
