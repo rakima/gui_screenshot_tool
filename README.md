@@ -4,7 +4,9 @@ Windowsアプリのウィンドウだけを撮影し、覚えておいた場所�
 上書き保存するツールです。README用スクリーンショットを手動で切り抜かずに
 更新できます。
 
-![GUI Screenshot Toolの画面](image/screenshot.png)
+![GUI Screenshot Toolの画面](image/使い方/01_screenshot.png)
+
+詳しい操作方法は[使い方.md](使い方.md)を参照してください。
 
 ## 機能
 
