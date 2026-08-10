@@ -1,6 +1,7 @@
 """Application use cases shared by the CLI and GUI."""
 
 import re
+from datetime import datetime
 from pathlib import Path
 
 from gui_screenshot_tool.capture import CaptureError, capture_window
@@ -51,20 +52,30 @@ def validate_auto_capture_settings(settings: AutoCaptureSettings) -> None:
         raise ValueError("ファイル名の末尾に空白またはピリオドは使用できません。")
 
 
-def resolve_output_path(settings: AppSettings | AutoCaptureSettings) -> Path:
-    """Resolve the destination path, adding the next sequence when enabled."""
+def resolve_output_path(
+    settings: AppSettings | AutoCaptureSettings,
+    current_time: datetime | None = None,
+) -> Path:
+    """Resolve the destination path with configured sequence and timestamp."""
     directory = Path(settings.output_directory)
+    source = Path(settings.filename)
+    filename = settings.filename
+    if settings.add_timestamp:
+        timestamp = (current_time or datetime.now()).strftime("%Y%m%d%H%M%S")
+        filename = f"{source.stem}_{timestamp}{source.suffix}"
     if not settings.add_sequence_number:
-        return directory / settings.filename
+        return directory / filename
 
-    pattern = re.compile(rf"^(\d+)_{re.escape(settings.filename)}$")
+    pattern = re.compile(
+        rf"^(\d+)_{re.escape(source.stem)}(?:_\d{{14}})?{re.escape(source.suffix)}$"
+    )
     highest_sequence = 0
     if directory.is_dir():
         for candidate in directory.iterdir():
             match = pattern.match(candidate.name)
             if match:
                 highest_sequence = max(highest_sequence, int(match.group(1)))
-    return directory / f"{highest_sequence + 1:02d}_{settings.filename}"
+    return directory / f"{highest_sequence + 1:02d}_{filename}"
 
 
 def capture_from_settings(settings: AppSettings) -> Path:

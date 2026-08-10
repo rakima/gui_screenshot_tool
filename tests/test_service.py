@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -79,3 +80,27 @@ def test_sequence_number_expands_beyond_two_digits(tmp_path):
     settings = make_auto_settings(tmp_path, add_sequence_number=True)
 
     assert resolve_output_path(settings) == tmp_path / "100_sample.png"
+
+
+def test_timestamp_is_added_before_extension(tmp_path):
+    settings = make_auto_settings(tmp_path, add_timestamp=True)
+
+    assert resolve_output_path(
+        settings,
+        datetime(2026, 8, 10, 14, 30, 25),
+    ) == (tmp_path / "sample_20260810143025.png")
+
+
+def test_sequence_and_timestamp_can_be_used_together(tmp_path):
+    (tmp_path / "01_sample_20260809120000.png").touch()
+    (tmp_path / "02_sample.png").touch()
+    settings = make_auto_settings(
+        tmp_path,
+        add_sequence_number=True,
+        add_timestamp=True,
+    )
+
+    assert resolve_output_path(
+        settings,
+        datetime(2026, 8, 10, 14, 30, 25),
+    ) == (tmp_path / "03_sample_20260810143025.png")
