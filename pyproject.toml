@@ -20,6 +20,9 @@ dev = [
     "pytest>=8.3",
     "ruff>=0.9",
 ]
+build-exe = [
+    "pyinstaller>=6.16",
+]
 
 [project.scripts]
 gui-screenshot-tool = "gui_screenshot_tool.cli:main"
