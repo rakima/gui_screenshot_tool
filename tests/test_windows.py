@@ -36,12 +36,11 @@ def test_find_window_supports_partial_title_match(monkeypatch):
     assert result == target
 
 
-def test_list_windows_gets_process_id_from_win32process(monkeypatch):
+def test_list_windows_includes_owned_top_level_dialog(monkeypatch):
     fake_gui = SimpleNamespace(
         EnumWindows=lambda callback, extra: callback(10, extra),
         GetWindowText=lambda _handle: "Sample App",
         IsWindowVisible=lambda _handle: True,
-        GetParent=lambda _handle: 0,
         IsIconic=lambda _handle: False,
     )
     fake_process = SimpleNamespace(

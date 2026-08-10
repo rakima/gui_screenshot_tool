@@ -40,7 +40,10 @@ def list_windows() -> list[WindowInfo]:
     def callback(handle: int, _extra: object) -> bool:
         title = win32gui.GetWindowText(handle).strip()
         visible = bool(win32gui.IsWindowVisible(handle))
-        if title and visible and win32gui.GetParent(handle) == 0:
+        # EnumWindows already limits results to top-level windows. An owned
+        # top-level window (for example a Tkinter Toplevel dialog) may have a
+        # non-zero GetParent result, so do not exclude it here.
+        if title and visible:
             _, process_id = win32process.GetWindowThreadProcessId(handle)
             windows.append(
                 WindowInfo(
