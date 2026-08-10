@@ -33,6 +33,7 @@ class AppSettings:
     window_title: str
     output_directory: str
     filename: str
+    add_sequence_number: bool = False
 
     @property
     def output_path(self) -> Path:
@@ -71,6 +72,7 @@ class AutoCaptureSettings:
     close_after_capture: bool
     exit_mode: ExitMode
     shutdown_timeout_seconds: float = 5.0
+    add_sequence_number: bool = False
 
     @property
     def output_path(self) -> Path:

@@ -59,6 +59,7 @@ def test_auto_capture_profile_round_trip_preserves_manual_settings(tmp_path):
         filename="sample.png",
         close_after_capture=True,
         exit_mode=ExitMode.GRACEFUL_THEN_FORCE,
+        add_sequence_number=True,
     )
 
     store.save(manual)

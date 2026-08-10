@@ -8,7 +8,11 @@ from gui_screenshot_tool.models import (
     ExitMode,
     TitleMatchMode,
 )
-from gui_screenshot_tool.service import validate_auto_capture_settings, validate_settings
+from gui_screenshot_tool.service import (
+    resolve_output_path,
+    validate_auto_capture_settings,
+    validate_settings,
+)
 
 
 def make_settings(filename: str = "main_window.png") -> AppSettings:
@@ -53,3 +57,25 @@ def test_valid_auto_capture_settings(tmp_path):
 def test_auto_capture_rejects_windows_invalid_filename(tmp_path, filename):
     with pytest.raises(ValueError):
         validate_auto_capture_settings(make_auto_settings(tmp_path, filename=filename))
+
+
+def test_sequence_number_starts_at_01(tmp_path):
+    settings = make_auto_settings(tmp_path, add_sequence_number=True)
+
+    assert resolve_output_path(settings) == tmp_path / "01_sample.png"
+
+
+def test_sequence_number_uses_next_number_without_overwriting(tmp_path):
+    (tmp_path / "01_sample.png").touch()
+    (tmp_path / "02_sample.png").touch()
+    (tmp_path / "unrelated.png").touch()
+    settings = make_auto_settings(tmp_path, add_sequence_number=True)
+
+    assert resolve_output_path(settings) == tmp_path / "03_sample.png"
+
+
+def test_sequence_number_expands_beyond_two_digits(tmp_path):
+    (tmp_path / "99_sample.png").touch()
+    settings = make_auto_settings(tmp_path, add_sequence_number=True)
+
+    assert resolve_output_path(settings) == tmp_path / "100_sample.png"

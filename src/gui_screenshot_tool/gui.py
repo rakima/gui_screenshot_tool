@@ -51,6 +51,7 @@ class ScreenshotApp(ttk.Frame):
         self.window_var = tk.StringVar()
         self.directory_var = tk.StringVar()
         self.filename_var = tk.StringVar(value="screenshot.png")
+        self.sequence_var = tk.BooleanVar(value=False)
         self.status_var = tk.StringVar(value="ウィンドウ一覧を読み込んでいます…")
         self._build()
         self._load_settings()
@@ -88,11 +89,16 @@ class ScreenshotApp(ttk.Frame):
 
         ttk.Label(self, text="ファイル名").grid(row=4, column=0, sticky="w")
         ttk.Entry(self, textvariable=self.filename_var).grid(
-            row=5, column=0, sticky="ew", pady=(4, 18)
+            row=5, column=0, sticky="ew", pady=(4, 8)
         )
+        ttk.Checkbutton(
+            self,
+            text="ファイル名の先頭に連番を付ける（01_、02_…）",
+            variable=self.sequence_var,
+        ).grid(row=6, column=0, sticky="w", pady=(0, 18))
 
         buttons = ttk.Frame(self)
-        buttons.grid(row=6, column=0, sticky="e")
+        buttons.grid(row=7, column=0, sticky="e")
         ttk.Button(buttons, text="設定保存", command=self.save_settings).grid(
             row=0, column=0, padx=(0, 8)
         )
@@ -102,8 +108,8 @@ class ScreenshotApp(ttk.Frame):
             command=self.capture,
             style="Accent.TButton",
         ).grid(row=0, column=1)
-        ttk.Separator(self).grid(row=7, column=0, sticky="ew", pady=(18, 10))
-        ttk.Label(self, textvariable=self.status_var).grid(row=8, column=0, sticky="w")
+        ttk.Separator(self).grid(row=8, column=0, sticky="ew", pady=(18, 10))
+        ttk.Label(self, textvariable=self.status_var).grid(row=9, column=0, sticky="w")
 
     def _load_settings(self) -> None:
         try:
@@ -115,6 +121,7 @@ class ScreenshotApp(ttk.Frame):
             self.window_var.set(settings.window_title)
             self.directory_var.set(settings.output_directory)
             self.filename_var.set(settings.filename)
+            self.sequence_var.set(settings.add_sequence_number)
 
     def refresh_windows(self) -> None:
         remembered_title = self._selected_title() or self.window_var.get()
@@ -156,6 +163,7 @@ class ScreenshotApp(ttk.Frame):
             window_title=self._selected_title().strip(),
             output_directory=self.directory_var.get().strip(),
             filename=self.filename_var.get().strip(),
+            add_sequence_number=self.sequence_var.get(),
         )
 
     def choose_directory(self) -> None:
@@ -570,6 +578,9 @@ class AutoCaptureSettingsDialog(tk.Toplevel):
             "shutdown_timeout_seconds": tk.StringVar(
                 value=str(settings.shutdown_timeout_seconds if settings else 5)
             ),
+            "add_sequence_number": tk.BooleanVar(
+                value=settings.add_sequence_number if settings else False
+            ),
         }
 
     def _build(self) -> None:
@@ -624,11 +635,16 @@ class AutoCaptureSettingsDialog(tk.Toplevel):
         close_row = len(rows)
         ttk.Checkbutton(
             frame,
+            text="ファイル名の先頭に連番を付ける（01_、02_…）",
+            variable=self.variables["add_sequence_number"],
+        ).grid(row=close_row, column=1, sticky="w", padx=(12, 0), pady=4)
+        ttk.Checkbutton(
+            frame,
             text="撮影後にアプリを閉じる",
             variable=self.variables["close_after_capture"],
-        ).grid(row=close_row, column=1, sticky="w", padx=(12, 0), pady=8)
+        ).grid(row=close_row + 1, column=1, sticky="w", padx=(12, 0), pady=4)
         buttons = ttk.Frame(frame)
-        buttons.grid(row=close_row + 1, column=0, columnspan=3, sticky="e", pady=(12, 0))
+        buttons.grid(row=close_row + 2, column=0, columnspan=3, sticky="e", pady=(12, 0))
         ttk.Button(buttons, text="キャンセル", command=self.destroy).grid(
             row=0, column=0, padx=(0, 8)
         )
@@ -710,6 +726,7 @@ class AutoCaptureSettingsDialog(tk.Toplevel):
                     if label == self.variables["exit_mode"].get()
                 ),
                 shutdown_timeout_seconds=float(self.variables["shutdown_timeout_seconds"].get()),
+                add_sequence_number=bool(self.variables["add_sequence_number"].get()),
             )
             validate_auto_capture_settings(settings)
             profiles = self.store.load_auto_capture_profiles()

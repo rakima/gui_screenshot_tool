@@ -51,14 +51,30 @@ def validate_auto_capture_settings(settings: AutoCaptureSettings) -> None:
         raise ValueError("ファイル名の末尾に空白またはピリオドは使用できません。")
 
 
+def resolve_output_path(settings: AppSettings | AutoCaptureSettings) -> Path:
+    """Resolve the destination path, adding the next sequence when enabled."""
+    directory = Path(settings.output_directory)
+    if not settings.add_sequence_number:
+        return directory / settings.filename
+
+    pattern = re.compile(rf"^(\d+)_{re.escape(settings.filename)}$")
+    highest_sequence = 0
+    if directory.is_dir():
+        for candidate in directory.iterdir():
+            match = pattern.match(candidate.name)
+            if match:
+                highest_sequence = max(highest_sequence, int(match.group(1)))
+    return directory / f"{highest_sequence + 1:02d}_{settings.filename}"
+
+
 def capture_from_settings(settings: AppSettings) -> Path:
     validate_settings(settings)
     window = find_window(settings.window_title)
     if window is None:
         raise CaptureError(f"対象ウィンドウが見つかりません: {settings.window_title}")
-    return capture_window(window.handle, settings.output_path)
+    return capture_window(window.handle, resolve_output_path(settings))
 
 
 def capture_selected(window: WindowInfo, settings: AppSettings) -> Path:
     validate_settings(settings)
-    return capture_window(window.handle, settings.output_path)
+    return capture_window(window.handle, resolve_output_path(settings))
