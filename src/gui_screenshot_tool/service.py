@@ -21,6 +21,8 @@ def validate_settings(settings: AppSettings) -> None:
         raise ValueError("ファイル名にはディレクトリを含めないでください。")
     if Path(filename).suffix.casefold() not in {".png", ".jpg", ".jpeg", ".webp"}:
         raise ValueError("対応する拡張子は .png、.jpg、.jpeg、.webp です。")
+    if settings.add_date and settings.add_timestamp:
+        raise ValueError("日付と日時は同時に指定できません。")
 
 
 def validate_auto_capture_settings(settings: AutoCaptureSettings) -> None:
@@ -44,6 +46,8 @@ def validate_auto_capture_settings(settings: AutoCaptureSettings) -> None:
             window_title=settings.window_title,
             output_directory=settings.output_directory,
             filename=settings.filename,
+            add_timestamp=settings.add_timestamp,
+            add_date=settings.add_date,
         )
     )
     if re.search(r'[<>:"/\\|?*\x00-\x1f]', settings.filename):
@@ -63,11 +67,15 @@ def resolve_output_path(
     if settings.add_timestamp:
         timestamp = (current_time or datetime.now()).strftime("%Y%m%d%H%M%S")
         filename = f"{source.stem}_{timestamp}{source.suffix}"
+    elif settings.add_date:
+        date = (current_time or datetime.now()).strftime("%Y%m%d")
+        filename = f"{source.stem}_{date}{source.suffix}"
     if not settings.add_sequence_number:
         return directory / filename
 
     pattern = re.compile(
-        rf"^(\d+)_{re.escape(source.stem)}(?:_\d{{14}})?{re.escape(source.suffix)}$"
+        rf"^(\d+)_{re.escape(source.stem)}(?:_\d{{8}}|_\d{{14}})?"
+        rf"{re.escape(source.suffix)}$"
     )
     highest_sequence = 0
     if directory.is_dir():

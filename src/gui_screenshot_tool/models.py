@@ -35,6 +35,7 @@ class AppSettings:
     filename: str
     add_sequence_number: bool = False
     add_timestamp: bool = False
+    add_date: bool = False
 
     @property
     def output_path(self) -> Path:
@@ -75,6 +76,7 @@ class AutoCaptureSettings:
     shutdown_timeout_seconds: float = 5.0
     add_sequence_number: bool = False
     add_timestamp: bool = False
+    add_date: bool = False
 
     @property
     def output_path(self) -> Path:

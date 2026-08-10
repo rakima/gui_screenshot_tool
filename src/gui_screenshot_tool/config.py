@@ -48,6 +48,7 @@ class SettingsStore:
                     filename=value["filename"],
                     add_sequence_number=bool(value.get("add_sequence_number", False)),
                     add_timestamp=bool(value.get("add_timestamp", False)),
+                    add_date=bool(value.get("add_date", False)),
                 )
                 for name, value in apps.items()
                 if isinstance(name, str) and isinstance(value, dict)
@@ -92,6 +93,7 @@ class SettingsStore:
                     shutdown_timeout_seconds=float(value.get("shutdown_timeout_seconds", 5.0)),
                     add_sequence_number=bool(value.get("add_sequence_number", False)),
                     add_timestamp=bool(value.get("add_timestamp", False)),
+                    add_date=bool(value.get("add_date", False)),
                 )
                 for name, value in profiles.items()
                 if isinstance(name, str) and isinstance(value, dict)

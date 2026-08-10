@@ -19,7 +19,7 @@ Windowsアプリのウィンドウだけを撮影し、覚えておいた場所�
 - 撮影後の正常終了、タイムアウト後の強制終了、終了しない設定に対応
 - 自動撮影の進行状況とエラーを画面内ログへ表示
 - `01_`、`02_` の連番を付け、既存画像を上書きせずに保存
-- 拡張子の前に撮影日時を `YYYYMMDDHHMMSS` 形式で追加
+- 拡張子の前に撮影日または撮影日時を追加（排他選択）
 
 ## 動作環境
 
@@ -89,10 +89,12 @@ python main.py --capture
 手動撮影と自動撮影設定では、次のファイル名オプションを個別にON/OFFできます。
 
 - 連番: `01_main_window.png`、`02_main_window.png`
+- 現在日付: `main_window_20260810.png`
 - 現在日時: `main_window_20260810143025.png`
-- 両方: `01_main_window_20260810143025.png`
+- 連番＋日時: `01_main_window_20260810143025.png`
 
 連番をONにした場合は既存ファイルの最大番号に1を加えるため、上書きしません。
+日付と日時は「なし／日付／日時」から1つだけ選択できます。
 連番がOFFの場合は従来どおり同名ファイルを上書きします。
 
 ## 設定ファイル
@@ -111,7 +113,8 @@ python main.py --capture
       "output_directory": "C:\\work\\compare_tool\\docs\\images",
       "filename": "main_window.png",
       "add_sequence_number": false,
-      "add_timestamp": false
+      "add_timestamp": false,
+      "add_date": false
     }
   },
   "auto_capture_profiles": {
@@ -128,6 +131,7 @@ python main.py --capture
       "filename": "main_window.png",
       "add_sequence_number": true,
       "add_timestamp": true,
+      "add_date": false,
       "close_after_capture": true,
       "exit_mode": "graceful_then_force",
       "shutdown_timeout_seconds": 5.0
@@ -145,9 +149,9 @@ python main.py --capture
 ないときはタイトルが一致する表示中のウィンドウへフォールバックします。
 
 `title_match_mode` は `exact`（完全一致）または `partial`（部分一致）です。
-`add_sequence_number` と `add_timestamp` はそれぞれ連番と現在日時の付加を表す
-真偽値です。既存の設定ファイルにキーがない場合はどちらも `false` として
-読み込みます。
+`add_sequence_number`、`add_date`、`add_timestamp` はそれぞれ連番、現在日付、
+現在日時の付加を表す真偽値です。`add_date` と `add_timestamp` は同時に `true`
+にはできません。既存の設定ファイルにキーがない場合は `false` として読み込みます。
 `exit_mode` は次のいずれかです。
 
 - `graceful`: 正常終了要求のみ

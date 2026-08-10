@@ -91,6 +91,22 @@ def test_timestamp_is_added_before_extension(tmp_path):
     ) == (tmp_path / "sample_20260810143025.png")
 
 
+def test_date_is_added_before_extension(tmp_path):
+    settings = make_auto_settings(tmp_path, add_date=True)
+
+    assert resolve_output_path(
+        settings,
+        datetime(2026, 8, 10, 14, 30, 25),
+    ) == (tmp_path / "sample_20260810.png")
+
+
+def test_date_and_timestamp_cannot_both_be_enabled(tmp_path):
+    settings = make_auto_settings(tmp_path, add_date=True, add_timestamp=True)
+
+    with pytest.raises(ValueError, match="同時に指定できません"):
+        validate_auto_capture_settings(settings)
+
+
 def test_sequence_and_timestamp_can_be_used_together(tmp_path):
     (tmp_path / "01_sample_20260809120000.png").touch()
     (tmp_path / "02_sample.png").touch()
@@ -104,3 +120,18 @@ def test_sequence_and_timestamp_can_be_used_together(tmp_path):
         settings,
         datetime(2026, 8, 10, 14, 30, 25),
     ) == (tmp_path / "03_sample_20260810143025.png")
+
+
+def test_sequence_continues_across_date_and_datetime_modes(tmp_path):
+    (tmp_path / "01_sample_20260809.png").touch()
+    (tmp_path / "02_sample_20260809120000.png").touch()
+    settings = make_auto_settings(
+        tmp_path,
+        add_sequence_number=True,
+        add_date=True,
+    )
+
+    assert resolve_output_path(
+        settings,
+        datetime(2026, 8, 10, 14, 30, 25),
+    ) == (tmp_path / "03_sample_20260810.png")

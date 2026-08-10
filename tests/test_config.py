@@ -25,6 +25,7 @@ def test_settings_round_trip(tmp_path):
         window_title="compare_tool",
         output_directory=r"C:\work\compare_tool\docs\images",
         filename="main_window.png",
+        add_date=True,
     )
 
     store.save(settings)
@@ -91,3 +92,26 @@ def test_delete_auto_capture_profile(tmp_path):
     store.delete_auto_capture_profile("sample")
 
     assert store.load_auto_capture_profiles() == {}
+
+
+def test_date_setting_round_trip(tmp_path):
+    store = SettingsStore(tmp_path / "settings.json")
+    automatic = AutoCaptureSettings(
+        "dated",
+        "app.exe",
+        str(tmp_path),
+        "",
+        "Sample",
+        TitleMatchMode.EXACT,
+        10,
+        0,
+        str(tmp_path),
+        "sample.png",
+        False,
+        ExitMode.LEAVE_RUNNING,
+        add_date=True,
+    )
+
+    store.save_auto_capture_profile(automatic)
+
+    assert store.load_auto_capture_profiles()["dated"].add_date is True
