@@ -574,7 +574,8 @@ class AutoCaptureSettingsDialog(tk.Toplevel):
         self.title("自動撮影設定")
         self.resizable(True, True)
         self.transient(master.winfo_toplevel())
-        self.grab_set()
+        # Keep the main window usable so this dialog itself can be selected and
+        # captured from the manual capture tab.
         self.variables = self._make_variables(settings)
         self._build()
         self.minsize(700, 620)

@@ -4,7 +4,9 @@ Windowsアプリのウィンドウだけを撮影し、覚えておいた場所�
 上書き保存するツールです。README用スクリーンショットを手動で切り抜かずに
 更新できます。
 
-![GUI Screenshot Toolの画面](image/screenshot.png)
+![GUI Screenshot Toolの画面](image/使い方/01_screenshot.png)
+
+詳しい操作方法は[使い方.md](使い方.md)を参照してください。
 
 ## 機能
 
@@ -41,6 +43,21 @@ python -m pip install -e .
 ```powershell
 python -m pip install -e ".[dev]"
 ```
+
+### Windows EXEのビルド
+
+PyInstallerを含むビルド用依存関係をインストールし、specファイルから
+コンソールなしの単体実行EXEを生成します。
+
+```powershell
+python -m pip install -e ".[build-exe]"
+pyinstaller --clean --noconfirm gui_screenshot_tool.spec
+```
+
+成果物は `dist\gui_screenshot_tool.exe` です。EXEはPythonを別途インストール
+していないWindows環境でも起動できます。初回起動時はone-file形式の内容を
+一時ディレクトリへ展開するため、通常より起動に時間がかかる場合があります。
+`version_info.txt` から製品名とバージョン情報を埋め込みます。
 
 ## 使い方
 
